@@ -36,4 +36,6 @@ pyxel run editor
 ## チュートリアル
 
 以下の動画を見てください。
-（準備中）
+
+[![Snapshot_2023-03-07-20 00 39](https://user-images.githubusercontent.com/53714664/223405666-ad2fa483-c1e3-46c5-a3d8-8571b00a1bf8.png)](https://youtu.be/II8bUHeJow8)
+
