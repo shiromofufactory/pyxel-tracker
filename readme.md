@@ -3,6 +3,11 @@
 Pyxel Tracker はレトロゲームエンジン「Pyxel」用のミュージックエディタです。
 作成した音楽データは.pyxapp 形式ではなく、json ファイルとして musics フォルダに出力します。
 
+β版のため、動作が安定しない可能性があります。
+また作者がMacしか使っていないため、Windowsでの操作が不便かもしれません。
+問題あればTwitter 
+[frenchbread](https://twitter.com/frenchbread1222) (@frenchbread1222) までDM等でお知らせください。
+
 ## 起動方法
 
 ```
