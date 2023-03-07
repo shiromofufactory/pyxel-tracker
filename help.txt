@@ -1,0 +1,28 @@
+Key Command List
+
+  Enter     : Play/stop music (saves the project on playback)
+  Escape    : Go back to previous screen
+  BackSpace : Delete note
+  Space     : Move the cursor down one row
+  @         : (in the far left column)
+              Set the tempo, beat, and note length.
+              (in the other columns)
+              Set tone, volume, and quantize.
+  R / -     : Place a rest
+  (other)   : Sound a note and place it on the track
+  shift     : Switch cursor to range selection mode
+  tab       : Switch to tone edit mode
+  alt       : Press together with the left/right keys
+              to moves the piano range up or down one octave
+
+with [ CTRL | CMD ] key
+
+  Q         : Exit application
+  N         : Initialie the project
+  L         : Load Project File
+  Z         : Undo
+  C         : Copy
+  V         : Paste
+  O         : Transpose up a semitone
+  I         : Transpose down a semitone
+  Enter     : Change playback start position

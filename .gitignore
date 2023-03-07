@@ -1,0 +1,5 @@
+__pycache__
+system/__pycache__
+dev
+old
+user/*.json
