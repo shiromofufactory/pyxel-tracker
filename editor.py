@@ -315,7 +315,7 @@ class App:
         if is_loop:
             row = 0 if self.playing_start is None else self.playing_start
         else:
-            row = self.crow1
+            row = self.crow1 % len(self.items)
         tick = int(self.items_tick[row] / 48)
         self.playing_row = row
         for ch in range(4):
