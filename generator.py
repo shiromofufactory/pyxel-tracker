@@ -138,11 +138,12 @@ class App:
             "chord": 0,  # コード
             "transpose": 0,  # 移調
             "arp_tone": 0,  # アルペジオの音色
-            "arp_lowest_note": 26,  # アルペジオ最低音
+            "arp_lowest_note": 28,  # アルペジオ最低音
             "arp_no_root": False,  # アルペジオからルート音を除外する
             "arp_continue_rate": 0.4,  # アルペジオ連続音発生率
+            "arp_rest_rate": 0.2,  # アルペジオ休符発生率
             "base": 4,  # ベースパターン
-            "base_highest_note": 24,  # ベース（ルート）最高音
+            "base_highest_note": 26,  # ベース（ルート）最高音
             "drums": 4,  # ドラムパターン(-1でドラムレス)
         }
         try:
@@ -284,9 +285,10 @@ class App:
         base = self.generator["base"][parm["base"]]
         drums = self.generator["drums"][parm["drums"]]
         chord = self.generator["chords"][parm["chord"]]
-        datas_by_measure = []
-        for notes in chord["notes"]:
-            data_by_measure = {"base": 0, "arp": []}
+        chord_lists = []
+        for progression in chord["progression"]:
+            chord_list = {"loc": progression["loc"], "base": 0, "arp": []}
+            notes = progression["notes"]
             cnt_note = 0
             for note in range(12):
                 cnt_note += 1 if notes[note] > 0 else 0
@@ -294,18 +296,21 @@ class App:
             for note in range(12):
                 arp_note = notes[note]
                 if arp_note == 2:  # ルート音
-                    data_by_measure["base"] = note
+                    chord_list["base"] = note
                 if arp_note > 0:  # 構成音
                     if arp_note == 1 or include_root:
-                        data_by_measure["arp"].append(note)
-
-            datas_by_measure.append(data_by_measure)
+                        chord_list["arp"].append(note)
+            chord_lists.append(chord_list)
+            chord_lists_cnt = len(chord_lists)
         items = []
         for loc in range(16 * 4):
             items.append(copy.deepcopy(item_empty))
             item = items[loc]
-            measure = loc // 16  # 小節数-1
-            data_by_measure = datas_by_measure[measure]
+            for rev_idx in range(chord_lists_cnt):
+                idx = chord_lists_cnt - rev_idx - 1
+                if loc >= chord_lists[idx]["loc"]:
+                    chord_list = chord_lists[idx]
+                    break
             tick = loc % 16  # 拍(0-15)
             if loc == 0:  # 最初の行（セットアップ）
                 item[0] = parm["speed"]  # テンポ
@@ -325,31 +330,34 @@ class App:
                     item[12] = 5  # ドラム音量
             # アルペジオ音設定
             if loc == 0 or px.rndf(0.0, 1.0) > parm["arp_continue_rate"]:
-                arp_notes = data_by_measure["arp"]
-                idx = px.rndi(0, len(arp_notes) - 1)
-                arp_note = 24 + parm["transpose"] + arp_notes[idx]
-                while arp_note < parm["arp_lowest_note"]:
-                    arp_note += 12
+                if px.rndf(0.0, 1.0) > parm["arp_rest_rate"]:
+                    arp_notes = chord_list["arp"]
+                    idx = px.rndi(0, len(arp_notes) - 1)
+                    arp_note = 24 + parm["transpose"] + arp_notes[idx]
+                    while arp_note < parm["arp_lowest_note"]:
+                        arp_note += 12
+                else:
+                    arp_note = -1
                 item[6] = arp_note
             # ベース音設定
             base_note = base[tick]
             if not base[tick] is None and base[tick] >= 0:
                 highest = parm["base_highest_note"]
-                base_root = 12 + parm["transpose"] + data_by_measure["base"]
+                base_root = 12 + parm["transpose"] + chord_list["base"]
                 while base_root + 24 > highest:
                     base_root -= 12
                 base_note = base_root + base[tick]
             item[10] = base_note
             # ドラム音設定
             if not no_drum:
-                pattern = "basic" if measure < 3 else "final"
+                pattern = "basic" if loc < 16 * 3 else "final"
                 item[14] = drums[pattern][tick]
         # 連続音の調整とリバーブパート
         for loc in range(16 * 4):
             item = items[loc]
             prev_item = items[(loc + 63) % 64]
-            if loc > 0 and item[6] == prev_item[6]:
-                item[6] = None
+            # if loc > 0 and item[6] == prev_item[6]:
+            #     item[6] = None
             if no_drum:
                 item[14] = prev_item[6]
         self.music = sounds.compile(items, self.tones, self.patterns)
