@@ -1,0 +1,120 @@
+{
+  "chords": [
+    {
+      "description": "Ⅰ - Ⅶ♭",
+      "notes": [
+        [2, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 2, 0],
+        [2, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 2, 0]
+      ]
+    },
+    {
+      "description": "Ⅳ - Ⅴ／Ⅳ",
+      "notes": [
+        [1, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 0, 2, 0, 1, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 0, 2, 0, 1, 0, 0, 0, 1]
+      ]
+    },
+    {
+      "description": "Ⅰ - Ⅴ - Ⅵ♭ - Ⅶ♭",
+      "notes": [
+        [2, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 1],
+        [1, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0],
+        [0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 2, 0]
+      ]
+    },
+    {
+      "description": "ⅣM7 - Ⅴ6 - Ⅵm",
+      "notes": [
+        [1, 0, 0, 0, 1, 2, 0, 0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 1, 0, 0, 2, 0, 0, 0, 1],
+        [1, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0],
+        [1, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0]
+      ]
+    },
+    {
+      "description": "Ⅵm - Ⅴ - Ⅳ - Ⅴ",
+      "notes": [
+        [1, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 1]
+      ]
+    },
+    {
+      "description": "Ⅵm - Ⅳ - Ⅴ - Ⅰ",
+      "notes": [
+        [1, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0],
+        [1, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 1],
+        [2, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0]
+      ]
+    },
+    {
+      "description": "Ⅵm - Ⅱ",
+      "notes": [
+        [1, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0],
+        [0, 0, 2, 0, 0, 0, 1, 0, 0, 1, 0, 0],
+        [1, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0],
+        [0, 0, 2, 0, 0, 0, 1, 0, 0, 1, 0, 0]
+      ]
+    },
+    {
+      "description": "Ⅲm7 - ⅣM7 - Ⅴ6 - Ⅵm9",
+      "notes": [
+        [0, 0, 1, 0, 2, 0, 0, 1, 0, 0, 0, 1],
+        [1, 0, 0, 0, 1, 2, 0, 0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 1, 0, 0, 2, 0, 0, 0, 1],
+        [1, 0, 0, 0, 1, 0, 0, 1, 0, 2, 0, 1]
+      ]
+    }
+  ],
+  "base": [
+    [24, null, null, null, null, null, null, null, null, null, null, null, 24, null, null, null],
+    [24, null, null, null, null, null,24, null, null, null, null, null, -1, null, 24, 24],
+    [12, null, 24, null, null, null, 24, null, 12, null, 24, null, null, null, 24, null],
+    [24, 24, -1, null, null, null, 24, 24, -1, null, null, null, 12, null, null, null],
+    [12, null, 24, null, 12, null, 24, null, 12, null, 24, null, 12, null, 24, null],
+    [12, -1, 19, 24, 12, -1, 19, 24, 12, -1, 19, 24, 12, -1, 19, 24],
+    [12, -1, 24, 24, 12, -1, 24, 24, 12, -1, 24, 24, 12, -1, 24, 24],
+    [24, null, 24, 24, 24, null, 24, 24, 24, null, 24, 24, 24, null, 24, 24]
+  ],
+  "drums": [
+    {
+      "basic": [":1", null, null, null, null, null, null, null, null, null, null, null, ":1", null, null, null],
+      "final": [":1", null, null, null, null, null, null, null, null, null, null, null, ":1", null, ":3", null]
+    },
+    {
+      "basic": [":1", null, null, null, null, null, ":1", null, null, null, null, null, ":1", null, null, null],
+      "final": [":1", null, null, null, null, null, ":1", null, null, null, null, null, ":7", ":7", ":5", null]
+    },
+    {
+      "basic": [":1", null, null, null, ":1", null, null, null, ":1", null, null, null, ":1", null, null, null],
+      "final": [":1", null, null, null, ":1", null, null, null, ":1", null, null, null, ":1", null, ":1", null]
+    },
+    {
+      "basic": [":1", null, null, null, null, null, ":1", null, null, null, null, null, ":3", ":3", null, null],
+      "final": [":1", null, null, null, null, null, ":1", null, null, null, null, null, ":3", ":3", ":1", null]
+    },
+    {
+      "basic": [":1", null, null, null, ":3", null, ":1", null, ":1", null, null, null, ":3", null, ":1", ":3"],
+      "final": [":1", null, null, null, ":3", null, ":1", null, ":1", null, null, null, ":3", ":3", ":3", ":3"]
+    },
+    {
+      "basic": [":1", null, ":3", null, ":3", null, ":1", null, ":1", null, ":3", null, ":3", null, ":1", ":3"],
+      "final": [":1", null, ":3", null, ":3", null, ":1", null, ":1", null, ":7", ":7", ":5", ":5", ":1", null]
+    },
+    {
+      "basic": [":3", null, ":3", ":3", ":2", null, ":3", ":3", ":3", null, ":3", ":3", ":2", null, ":3", ":3"],
+      "final": [":3", null, ":3", ":3", ":2", null, ":3", ":3", ":3", null, ":3", ":3", ":2", null, ":3", ":2"]
+    },
+    {
+      "basic": [":1", null, ":3", ":3", ":2", null, ":3", ":3", ":1", null, ":3", ":3", ":2", null, ":3", ":3"],
+      "final": [":1", null, ":3", ":3", ":2", null, ":3", ":3", ":1", null, ":3", ":3", ":2", ":2", ":2", null]
+    }
+  ]
+}

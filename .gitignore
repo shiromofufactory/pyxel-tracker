@@ -3,3 +3,5 @@ system/__pycache__
 dev
 old
 user/*.json
+musics/*.json
+projects/*.json
