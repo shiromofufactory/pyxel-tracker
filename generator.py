@@ -276,12 +276,14 @@ class App:
             px.play(ch, ch, loop=True)
 
     def generate_music(self):
+        px.stop()
         parm = self.parm
         no_drum = parm["drums"] < 0
         base = self.generator["base"][parm["base"]]
         drums = self.generator["drums"][parm["drums"]]
         chord = self.generator["chords"][parm["chord"]]
-        chord_lists = []
+        # コードリスト準備
+        self.chord_lists = []
         for progression in chord["progression"]:
             chord_list = {"loc": progression["loc"], "base": 0, "notes": []}
             notes = progression["notes"]
@@ -296,7 +298,7 @@ class App:
                 note_type = notes[idx % 12]
                 note = 12 + idx + parm["transpose"]
                 if note >= parm["arp_lowest_note"]:
-                    if note_type in [1, 2]:
+                    if note_type in [1, 2, 3]:
                         chord_list["notes"].append((note, note_type))
                         if note_highest is None:
                             note_highest = note + 12
@@ -305,21 +307,13 @@ class App:
                 if note_highest and note >= note_highest:
                     break
                 idx += 1
-            chord_lists.append(chord_list)
-            chord_lists_cnt = len(chord_lists)
+            self.chord_lists.append(chord_list)
+        # メインループ
         items = []
-        saved_melody = -1  # 直前のメロディー音
-        items = [copy.deepcopy(item_empty) for _ in range(16 * 4)]
         for loc in range(16 * 4):
+            items.append([None for _ in range(19)])
+            (chord＿list, _) = self.get_chord(loc)
             item = items[loc]
-            next_chord_loc = 16 * 4
-            for rev_idx in range(chord_lists_cnt):
-                idx = chord_lists_cnt - rev_idx - 1
-                if loc >= chord_lists[idx]["loc"]:
-                    chord_list = chord_lists[idx]
-                    break
-                else:
-                    next_chord_loc = chord_lists[idx]["loc"]
             tick = loc % 16  # 拍(0-15)
             if loc == 0:  # 最初の行（セットアップ）
                 item[0] = parm["speed"]  # テンポ
@@ -337,39 +331,6 @@ class App:
                     item[13] = item[5]
                 else:
                     item[12] = 5  # ドラム音量
-            # メロディー音設定
-            if item[6] is None:  # すでに埋まっていたらスキップ
-                cur_idx = None  # 直前のメロディーのインデックスを今のコードリストと照合
-                for idx, note in enumerate(chord_list["notes"]):
-                    if saved_melody == note[0]:
-                        cur_idx = idx
-                        break
-                if px.rndf(0.0, 1.0) < parm["arp_rest_rate"]:  # 休符
-                    item[6] = -1
-                elif saved_melody < 0 or cur_idx is None:  # 直前が休符 or コード切り替え
-                    idx = self.get_jumping_tone(chord_list)
-                    item[6] = chord_list["notes"][idx][0]
-                else:  # 直前の音が決まっている
-                    if px.rndf(0.0, 1.0) < parm["arp_continue_rate"]:
-                        item[6] = None  # 連続音
-                    else:
-                        next_idx = self.get_jumping_tone(chord_list, False)
-                        diff = abs(next_idx - cur_idx)
-                        direction = 1 if next_idx > cur_idx else -1
-                        if loc + diff >= next_chord_loc or diff > 3:
-                            # コードが切り替わる/跳躍量が大きい場合、跳躍音を採用（ルート音除外）
-                            idx = self.get_jumping_tone(chord_list)
-                            item[6] = chord_list["notes"][idx][0]
-                        elif diff == 0:
-                            item[6] = saved_melody
-                        else:
-                            cur_loc = loc
-                            while next_idx != cur_idx:
-                                cur_idx += direction
-                                items[cur_loc][6] = chord_list["notes"][cur_idx][0]
-                                cur_loc += 1
-            if item[6] is not None:
-                saved_melody = item[6]
             # ベース音設定
             base_note = base[tick]
             if not base[tick] is None and base[tick] >= 0:
@@ -383,28 +344,85 @@ class App:
             if not no_drum:
                 pattern = "basic" if loc < 16 * 3 else "final"
                 item[14] = drums[pattern][tick] if drums[pattern][tick] else None
-        # 連続音の調整とリバーブパート
+
+        while True:
+            saved_melody = -1  # 直前のメロディー音
+            melody_notes = [None for _ in range(16 * 4)]
+            for loc in range(16 * 4):
+                item = items[loc]
+                (chord＿list, next_chord_loc) = self.get_chord(loc)
+                # メロディー音設定
+                if melody_notes[loc] is None:  # すでに埋まっていたらスキップ
+                    cur_idx = None  # 直前のメロディーのインデックスを今のコードリストと照合
+                    for idx, note in enumerate(chord_list["notes"]):
+                        if saved_melody == note[0]:
+                            cur_idx = idx
+                            break
+                    if px.rndf(0.0, 1.0) < parm["arp_rest_rate"]:  # 休符
+                        melody_notes[loc] = -1
+                    elif saved_melody < 0 or cur_idx is None:  # 直前が休符 or コード切り替え
+                        idx = self.get_jumping_tone(chord_list)
+                        melody_notes[loc] = chord_list["notes"][idx][0]
+                    else:  # 直前の音が決まっている
+                        if px.rndf(0.0, 1.0) < parm["arp_continue_rate"]:
+                            melody_notes[loc] = None  # 連続音
+                        else:
+                            next_idx = self.get_jumping_tone(chord_list, False)
+                            diff = abs(next_idx - cur_idx)
+                            direction = 1 if next_idx > cur_idx else -1
+                            if loc + diff >= next_chord_loc or diff > 3:
+                                # コードが切り替わる/跳躍量が大きい場合、跳躍音を採用（ルート音除外）
+                                idx = self.get_jumping_tone(chord_list)
+                                melody_notes[loc] = chord_list["notes"][idx][0]
+                            elif diff == 0:
+                                melody_notes[loc] = saved_melody
+                            else:
+                                cur_loc = loc
+                                while next_idx != cur_idx:
+                                    cur_idx += direction
+                                    melody_notes[cur_loc] = chord_list["notes"][
+                                        cur_idx
+                                    ][0]
+                                    cur_loc += 1
+                if melody_notes[loc] is not None:
+                    saved_melody = melody_notes[loc]
+            break
+
+        # メロディーとリバーブパート
         for loc in range(16 * 4):
             item = items[loc]
-            prev_item = items[(loc + 63) % 64]
+            item[6] = melody_notes[loc]
             if no_drum:
-                item[14] = prev_item[6]
+                item[14] = melody_notes[(loc + 63) % 64]
+
+        # 完了処理
         self.music = sounds.compile(items, self.tones, self.patterns)
         self.items = items
         with open(f"./musics/generator.json", "wt") as fout:
             fout.write(json.dumps(self.music))
+
+    def get_chord(self, loc):
+        chord_lists_cnt = len(self.chord_lists)
+        next_chord_loc = 16 * 4
+        for rev_idx in range(chord_lists_cnt):
+            idx = chord_lists_cnt - rev_idx - 1
+            if loc >= self.chord_lists[idx]["loc"]:
+                chord_list = self.chord_lists[idx]
+                break
+            else:
+                next_chord_loc = self.chord_lists[idx]["loc"]
+        return chord_list, next_chord_loc
 
     def get_jumping_tone(self, chord_list, no_root=True):
         notes = chord_list["notes"]
         while True:
             idx = px.rndi(0, len(notes) - 1)
             # TODO: テンションコードの考慮
-            allowed_types = [1] if no_root else [1, 2]
+            allowed_types = [1, 3] if no_root else [1, 2, 3]
             if notes[idx][1] in allowed_types:
                 return idx
 
 
-item_empty = [None for _ in range(19)]
 list_speed = [360, 312, 276, 240, 216, 192, 168, 156]
 list_tones = [
     (11, "Pulse_solid"),
