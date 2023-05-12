@@ -139,7 +139,6 @@ class App:
             "transpose": 0,  # 移調
             "arp_tone": 0,  # アルペジオの音色
             "arp_lowest_note": 28,  # アルペジオ最低音
-            "arp_no_root": False,  # アルペジオからルート音を除外する
             "arp_continue_rate": 0.4,  # アルペジオ連続音発生率
             "arp_rest_rate": 0.2,  # アルペジオ休符発生率
             "base": 4,  # ベースパターン
@@ -174,9 +173,6 @@ class App:
             self.buttons.append(Button("transpose", key, 8 + 20 * i, 78, 20, i - 5))
         for i, elm in enumerate(list_tones):
             self.buttons.append(Button("arp_tone", i, 8 + 24 * i, 108, 24, i + 1))
-        # for i in range(2):
-        #    key, text = (False, "NO") if i == 0 else (True, "YES")
-        #    self.buttons.append(Button("arp_no_root", key, 8 + 24 * i, 138, 24, text))
         for i, elm in enumerate(list_arp_continue_rate):
             self.buttons.append(
                 Button("arp_continue_rate", elm, 8 + 24 * i, 138, 24, elm)
@@ -287,30 +283,43 @@ class App:
         chord = self.generator["chords"][parm["chord"]]
         chord_lists = []
         for progression in chord["progression"]:
-            chord_list = {"loc": progression["loc"], "base": 0, "arp": []}
+            chord_list = {"loc": progression["loc"], "base": 0, "notes": []}
             notes = progression["notes"]
-            cnt_note = 0
-            for note in range(12):
-                cnt_note += 1 if notes[note] > 0 else 0
-            include_root = not parm["arp_no_root"] and cnt_note < 5
-            for note in range(12):
-                arp_note = notes[note]
-                if arp_note == 2:  # ルート音
-                    chord_list["base"] = note
-                if arp_note > 0:  # 構成音
-                    if arp_note == 1 or include_root:
-                        chord_list["arp"].append(note)
+            # ベース音設定
+            for idx in range(12):
+                if notes[idx] == 2:
+                    chord_list["base"] = idx
+            # レンジを決める
+            note_highest = None
+            idx = 0
+            while True:
+                note_type = notes[idx % 12]
+                note = 12 + idx + parm["transpose"]
+                if note >= parm["arp_lowest_note"]:
+                    if note_type in [1, 2]:
+                        chord_list["notes"].append((note, note_type))
+                        if note_highest is None:
+                            note_highest = note + 12
+                    elif note_type == 9 and note_highest:
+                        chord_list["notes"].append((note, note_type))
+                if note_highest and note >= note_highest:
+                    break
+                idx += 1
             chord_lists.append(chord_list)
             chord_lists_cnt = len(chord_lists)
         items = []
+        saved_melody = -1  # 直前のメロディー音
+        items = [copy.deepcopy(item_empty) for _ in range(16 * 4)]
         for loc in range(16 * 4):
-            items.append(copy.deepcopy(item_empty))
             item = items[loc]
+            next_chord_loc = 16 * 4
             for rev_idx in range(chord_lists_cnt):
                 idx = chord_lists_cnt - rev_idx - 1
                 if loc >= chord_lists[idx]["loc"]:
                     chord_list = chord_lists[idx]
                     break
+                else:
+                    next_chord_loc = chord_lists[idx]["loc"]
             tick = loc % 16  # 拍(0-15)
             if loc == 0:  # 最初の行（セットアップ）
                 item[0] = parm["speed"]  # テンポ
@@ -328,17 +337,39 @@ class App:
                     item[13] = item[5]
                 else:
                     item[12] = 5  # ドラム音量
-            # アルペジオ音設定
-            if loc == 0 or px.rndf(0.0, 1.0) > parm["arp_continue_rate"]:
-                if px.rndf(0.0, 1.0) > parm["arp_rest_rate"]:
-                    arp_notes = chord_list["arp"]
-                    idx = px.rndi(0, len(arp_notes) - 1)
-                    arp_note = 24 + parm["transpose"] + arp_notes[idx]
-                    while arp_note < parm["arp_lowest_note"]:
-                        arp_note += 12
-                else:
-                    arp_note = -1
-                item[6] = arp_note
+            # メロディー音設定
+            if item[6] is None:  # すでに埋まっていたらスキップ
+                cur_idx = None  # 直前のメロディーのインデックスを今のコードリストと照合
+                for idx, note in enumerate(chord_list["notes"]):
+                    if saved_melody == note[0]:
+                        cur_idx = idx
+                        break
+                if px.rndf(0.0, 1.0) < parm["arp_rest_rate"]:  # 休符
+                    item[6] = -1
+                elif saved_melody < 0 or cur_idx is None:  # 直前が休符 or コード切り替え
+                    idx = self.get_jumping_tone(chord_list)
+                    item[6] = chord_list["notes"][idx][0]
+                else:  # 直前の音が決まっている
+                    if px.rndf(0.0, 1.0) < parm["arp_continue_rate"]:
+                        item[6] = None  # 連続音
+                    else:
+                        next_idx = self.get_jumping_tone(chord_list, False)
+                        diff = abs(next_idx - cur_idx)
+                        direction = 1 if next_idx > cur_idx else -1
+                        if loc + diff >= next_chord_loc or diff > 3:
+                            # コードが切り替わる/跳躍量が大きい場合、跳躍音を採用（ルート音除外）
+                            idx = self.get_jumping_tone(chord_list)
+                            item[6] = chord_list["notes"][idx][0]
+                        elif diff == 0:
+                            item[6] = saved_melody
+                        else:
+                            cur_loc = loc
+                            while next_idx != cur_idx:
+                                cur_idx += direction
+                                items[cur_loc][6] = chord_list["notes"][cur_idx][0]
+                                cur_loc += 1
+            if item[6] is not None:
+                saved_melody = item[6]
             # ベース音設定
             base_note = base[tick]
             if not base[tick] is None and base[tick] >= 0:
@@ -351,19 +382,26 @@ class App:
             # ドラム音設定
             if not no_drum:
                 pattern = "basic" if loc < 16 * 3 else "final"
-                item[14] = drums[pattern][tick]
+                item[14] = drums[pattern][tick] if drums[pattern][tick] else None
         # 連続音の調整とリバーブパート
         for loc in range(16 * 4):
             item = items[loc]
             prev_item = items[(loc + 63) % 64]
-            # if loc > 0 and item[6] == prev_item[6]:
-            #     item[6] = None
             if no_drum:
                 item[14] = prev_item[6]
         self.music = sounds.compile(items, self.tones, self.patterns)
         self.items = items
         with open(f"./musics/generator.json", "wt") as fout:
             fout.write(json.dumps(self.music))
+
+    def get_jumping_tone(self, chord_list, no_root=True):
+        notes = chord_list["notes"]
+        while True:
+            idx = px.rndi(0, len(notes) - 1)
+            # TODO: テンションコードの考慮
+            allowed_types = [1] if no_root else [1, 2]
+            if notes[idx][1] in allowed_types:
+                return idx
 
 
 item_empty = [None for _ in range(19)]
