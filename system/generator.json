@@ -126,10 +126,10 @@
       "base_quantize": 14,
       "drums": 4,
       "melo_tone": 0,
+      "melo_lowest_note": 28,
+      "melo_length_rate": 1,
       "melo_continue_rate": 0.2,
-      "melo_rest_rate": 0.2,
-      "melo_4_rate": 0.2,
-      "melo_8_rate": 0.4
+      "melo_rest_rate": 0.2
     },
     {
       "speed": 216,
@@ -138,10 +138,10 @@
       "base_quantize": 12,
       "drums": 5,
       "melo_tone": 3,
+      "melo_lowest_note": 28,
+      "melo_length_rate": 3,
       "melo_continue_rate": 0.0,
-      "melo_rest_rate": 0.4,
-      "melo_4_rate": 0.0,
-      "melo_8_rate": 0.2
+      "melo_rest_rate": 0.4
     },
     {
       "speed": 312,
@@ -150,10 +150,10 @@
       "base_quantize": 15,
       "drums": -1,
       "melo_tone": 5,
+      "melo_lowest_note": 30,
+      "melo_length_rate": 0,
       "melo_continue_rate": 0.4,
-      "melo_rest_rate": 0.2,
-      "melo_4_rate": 0.6,
-      "melo_8_rate": 0.4
+      "melo_rest_rate": 0.2
     },
     {
       "speed": 276,
@@ -162,10 +162,10 @@
       "base_quantize": 15,
       "drums": 3,
       "melo_tone": 4,
+      "melo_lowest_note": 28,
+      "melo_length_rate": 1,
       "melo_continue_rate": 0.0,
-      "melo_rest_rate": 0.2,
-      "melo_4_rate": 0.4,
-      "melo_8_rate": 0.4
+      "melo_rest_rate": 0.2
     },
     {
       "speed": 240,
@@ -174,10 +174,10 @@
       "base_quantize": 14,
       "drums": 2,
       "melo_tone": 0,
+      "melo_lowest_note": 29,
+      "melo_length_rate": 0,
       "melo_continue_rate": 0.6,
-      "melo_rest_rate": 0.3,
-      "melo_4_rate": 0.4,
-      "melo_8_rate": 0.6
+      "melo_rest_rate": 0.3
     },
     {
       "speed": 216,
@@ -186,10 +186,10 @@
       "base": 3,
       "drums": 4,
       "melo_tone": 1,
+      "melo_lowest_note": 33,
+      "melo_length_rate": 4,
       "melo_continue_rate": 0.0,
-      "melo_rest_rate": 0.4,
-      "melo_4_rate": 0.2,
-      "melo_8_rate": 0.6
+      "melo_rest_rate": 0.4
     },
     {
       "speed": 192,
@@ -198,10 +198,10 @@
       "base_quantize": 13,
       "drums": 6,
       "melo_tone": 0,
+      "melo_lowest_note": 28,
+      "melo_length_rate": 2,
       "melo_continue_rate": 0.2,
-      "melo_rest_rate": 0.2,
-      "melo_4_rate": 0.4,
-      "melo_8_rate": 0.0
+      "melo_rest_rate": 0.2
     },
     {
       "speed": 168,
@@ -210,10 +210,10 @@
       "base_quantize": 15,
       "drums": 7,
       "melo_tone": 3,
+      "melo_lowest_note": 28,
+      "melo_length_rate": 0,
       "melo_continue_rate": 0.0,
-      "melo_rest_rate": 0.0,
-      "melo_4_rate": 0.2,
-      "melo_8_rate": 0.8
+      "melo_rest_rate": 0.0
     }
   ]
 }

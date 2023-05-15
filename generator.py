@@ -172,10 +172,8 @@ class App:
             "preset": 0,
             "transpose": 0,  # 移調
             "language": 0,
-            "melo_lowest_note": 28,  # メロディ最低音
             "melo_jutout_rate": 0.2,  # 音符の半ずらし発生率
             "base_highest_note": 26,  # ベース（ルート）最高音
-            "base_quantize": 15,  # ベースクオンタイズ
         }
         try:
             fin = open("./user/tones.json", "rt")
@@ -225,25 +223,16 @@ class App:
         # メロディータブ
         list_melo_continue_rate = [0.0, 0.2, 0.4, 0.6]
         list_melo_rest_rate = [0.0, 0.1, 0.2, 0.3, 0.4]
-        list_melo_length_rate = [
-            (0.4, 0.6),
-            (0.2, 0.4),
-            (0.4, 0.0),
-            (0.0, 0.4),
-            (0.0, 0.0),
-        ]
-        list_melo_4_rate = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
-        list_melo_8_rate = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
         for i, elm in enumerate(list_tones):
             self.set_btn(2, "melo_tone", i, 8 + 24 * i, 34, 24, i + 1)
+        for i, elm in enumerate(list_melo_lowest_note):
+            self.set_btn(2, "melo_lowest_note", elm[0], 8 + 24 * i, 64, 24, elm[1])
+        for i, elm in enumerate(list_melo_length_rate):
+            self.set_btn(2, "melo_length_rate", i, 8 + 32 * i, 94, 32, elm[2])
         for i, elm in enumerate(list_melo_rest_rate):
-            self.set_btn(2, "melo_rest_rate", elm, 8 + 24 * i, 64, 24, elm)
+            self.set_btn(2, "melo_rest_rate", elm, 8 + 24 * i, 154, 24, elm)
         for i, elm in enumerate(list_melo_continue_rate):
-            self.set_btn(2, "melo_continue_rate", elm, 8 + 24 * i, 94, 24, elm)
-        for i, elm in enumerate(list_melo_4_rate):
-            self.set_btn(2, "melo_4_rate", elm, 8 + 24 * i, 124, 24, elm)
-        for i, elm in enumerate(list_melo_8_rate):
-            self.set_btn(2, "melo_8_rate", elm, 8 + 24 * i, 154, 24, elm)
+            self.set_btn(2, "melo_continue_rate", elm, 8 + 24 * i, 184, 24, elm)
         # self.set_btn(2, None, None, 96, 232, 48, "Restart"))
         self.items = []
         self.set_preset(self.parm["preset"])
@@ -260,12 +249,7 @@ class App:
         self.buttons.append(Button(*args))
 
     def set_disabled(self):
-        melo_4_rate = self.parm["melo_4_rate"]
-        for button in self.buttons:
-            if button.type == "melo_8_rate":
-                button.disabled = melo_4_rate + button.key > 1.0
-        if self.parm["melo_8_rate"] + melo_4_rate > 1.0:
-            self.parm["melo_8_rate"] = 1.0 - melo_4_rate
+        pass
 
     def update(self):
         if not px.btnp(px.MOUSE_BUTTON_LEFT):
@@ -294,16 +278,18 @@ class App:
     def select_button(self, button):
         if button.type:
             self.parm[button.type] = button.key
+            if button.type == "language":
+                return
             if button.type == "preset":
                 self.set_preset(button.key)
             else:
                 make_melody = button.type in [
                     "transpose",
                     "chord",
+                    "melo_lowest_note",
+                    "melo_length_rate",
                     "melo_continue_rate",
                     "melo_rest_rate",
-                    "melo_4_rate",
-                    "melo_8_rate",
                 ]
                 self.set_disabled()
                 self.generate_music(make_melody)
@@ -325,7 +311,7 @@ class App:
             self.text(8, 24, 9, COL_TEXT_BASIC)
             self.text(8, 54, 10, COL_TEXT_BASIC)
             chord_name = self.generator["chords"][self.parm["chord"]]["description"]
-            self.text(72, 54, chord_name, COL_TEXT_MUTED)
+            self.text(80, 54, chord_name, COL_TEXT_MUTED)
             self.text(8, 84, 11, COL_TEXT_BASIC)
             self.text(8, 114, 12, COL_TEXT_BASIC)
             self.text(8, 144, 13, COL_TEXT_BASIC)
@@ -338,12 +324,11 @@ class App:
             self.text(40, 24, melo_tone_name, COL_TEXT_MUTED)
             self.text(8, 54, 17, COL_TEXT_BASIC)
             self.text(8, 84, 18, COL_TEXT_BASIC)
-            self.text(8, 114, 19, COL_TEXT_BASIC)
-            self.text(8, 144, 20, COL_TEXT_BASIC)
-            px.rectb(8, 168, 240, 32, COL_TEXT_MUTED)
-            self.text(16, 172, 21, COL_TEXT_MUTED)
-            self.text(16, 180, 22, COL_TEXT_MUTED)
-            self.text(16, 188, 23, COL_TEXT_MUTED)
+            px.rectb(8, 108, 240, 24, COL_TEXT_MUTED)
+            self.text(16, 112, 19, COL_TEXT_MUTED)
+            self.text(16, 120, 20, COL_TEXT_MUTED)
+            self.text(8, 144, 21, COL_TEXT_BASIC)
+            self.text(8, 174, 22, COL_TEXT_BASIC)
         for tab in self.tabs:
             tab.draw(self)
         for button in self.buttons:
@@ -444,19 +429,18 @@ class App:
                 "reverb is applied to the melody instead of the drum part.",
             ),
             ("ねいろ", "Tone"),
+            ("おとのたかさ（さいていおん）", "Sound Height (lowest note)"),
+            ("おんぷのながさ", "Notes Length"),
+            (
+                "どのながさの おんぷをつかうか けっていします。",
+                "Determines which length of notes to use.",
+            ),
+            (
+                "「４／８」なら ４ぶおんぷと８ぶおんぷを　つかいます。",
+                "ex) '4/8' uses quarter notes and eighth notes.",
+            ),
             ("きゅうふのひんど", "Rests Ratio"),
             ("じぞくおんのひんど", "Sustained Tone Ratio"),
-            ("４ぶおんぷのひんど", "Quarter notes Ratio"),
-            ("８ぶおんぷのひんど", "Eighth notes Ratio"),
-            (
-                "おんぷには４ぶおんぷ・８ぶおんぷ・１６ぶおんぷがあり、",
-                "There are three types of notes: quarter/eighth/sixteenth",
-            ),
-            ("１６ぶおんぷのはっせいりつは、", "notes, and the sixteenth notes ratio is "),
-            (
-                "（１−（４ぶおんぷのひんど＋８ぶおんぷのひんど））です。",
-                "( 1 - ( Quarter notes Ratio + Eighth notes Ratio ) )",
-            ),
         ]
         lang = self.parm["language"]
         return list_text[value][lang], 4 if lang == 0 else 2
@@ -559,14 +543,14 @@ class App:
                 note_len = 1
                 beat = loc % 4
                 if (
-                    note_len_seed < parm["melo_4_rate"]
+                    note_len_seed < list_melo_length_rate[parm["melo_length_rate"]][0]
                     and loc + 3 < next_chord_loc
                     and (beat in [0, 2])
                     and (beat == 0 or px.rndf(0.0, 1.0) < parm["melo_jutout_rate"])
                 ):
                     note_len = 4
                 elif (
-                    note_len_seed < parm["melo_4_rate"] + parm["melo_8_rate"]
+                    note_len_seed < list_melo_length_rate[parm["melo_length_rate"]][1]
                     and loc + 1 < next_chord_loc
                     and (beat in [0, 2] or px.rndf(0.0, 1.0) < parm["melo_jutout_rate"])
                 ):
@@ -681,5 +665,22 @@ list_tones = [
     (10, "Square solid"),
     (6, "Square thin (Harp)"),
     (4, "Square soft (Flute)"),
+]
+list_melo_lowest_note = [
+    (28, "E2"),
+    (29, "F2"),
+    (30, "F#2"),
+    (31, "G2"),
+    (32, "G#2"),
+    (33, "A2"),
+    (34, "A#2"),
+]
+
+list_melo_length_rate = [
+    (0.4, 1.0, "4/8"),
+    (0.2, 0.6, "4/8/16"),
+    (0.4, 0.4, "4/16"),
+    (0.0, 0.4, "8/16"),
+    (0.0, 0.0, "16"),
 ]
 App()
