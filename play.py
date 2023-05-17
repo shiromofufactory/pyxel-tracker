@@ -24,8 +24,8 @@ class App:
 
     def draw(self):
         pyxel.cls(0)
-        pyxel.text(20, 54, "Press [SPACE] to play / stop.", 7)
-        pyxel.text(20, 60, "Press [ESC] to exit.", 7)
+        pyxel.text(20, 52, "Press [SPACE] to play / stop.", 7)
+        pyxel.text(20, 64, "Press [ESC] to exit.", 7)
 
 
 App()
