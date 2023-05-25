@@ -1,5 +1,6 @@
 import pyxel as px
 import json
+import os
 import copy
 import glob
 
@@ -8,12 +9,12 @@ from system import sounds
 
 
 class App:
-
     # ===============================================
     # Pyxelベース機能
     # ===============================================
 
     def __init__(self):
+        self.output_path = os.path.abspath("./")
         px.init(256, 256, title="Pyxel Tracker", quit_key=px.KEY_NONE)
         self.loading = False
         with open("./help.txt", "rt") as fin:
@@ -298,11 +299,11 @@ class App:
             self.init_play()
 
     def init_play(self):
-        with open(f"./projects/{self.project}.json", "wt") as fout:
+        with open(f"{self.output_path}/projects/{self.project}.json", "wt") as fout:
             fout.write(json.dumps(self.items))
-        with open(f"./musics/{self.project}.json", "wt") as fout:
+        with open(f"{self.output_path}/musics/{self.project}.json", "wt") as fout:
             fout.write(json.dumps(self.music))
-        with open(f"./user/tones.json", "wt") as fout:
+        with open(f"{self.output_path}/user/tones.json", "wt") as fout:
             fout.write(json.dumps(self.tones))
         self.message = "Saved."
         for ch, sound in enumerate(self.music):
