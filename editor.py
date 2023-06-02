@@ -14,21 +14,21 @@ class App:
     # ===============================================
 
     def __init__(self):
-        self.output_path = os.path.abspath("./")
+        self.outpath = os.path.abspath("./")
         px.init(256, 256, title="Pyxel Tracker", quit_key=px.KEY_NONE)
         self.loading = False
-        with open("./help.txt", "rt") as fin:
+        with open("./help.txt", "rt", encoding="utf-8") as fin:
             self.help_texts = fin.read().split("\n")
         try:
-            fin = open("./user/tones.json", "rt")
+            fin = open("./user/tones.json", "rt", encoding="utf-8")
         except:
-            fin = open("./system/tones.json", "rt")
+            fin = open("./system/tones.json", "rt", encoding="utf-8")
         finally:
             self.tones = json.loads(fin.read())
         try:
-            fin = open("./user/patterns.json", "rt")
+            fin = open("./user/patterns.json", "rt", encoding="utf-8")
         except:
-            fin = open("./system/patterns.json", "rt")
+            fin = open("./system/patterns.json", "rt", encoding="utf-8")
         finally:
             self.patterns = json.loads(fin.read())
         self.pool = []
@@ -230,7 +230,9 @@ class App:
                 self.project = self.files[self.file_cursol].replace(".json", "")
                 self.crow1 = 0
                 self.pos = 0
-                with open(f"./projects/{self.project}.json", "rt") as fin:
+                with open(
+                    f"./projects/{self.project}.json", "rt", encoding="utf-8"
+                ) as fin:
                     self.items = json.loads(fin.read())
                     self.set_locs()
                     self.message = "File loaded."
@@ -299,11 +301,15 @@ class App:
             self.init_play()
 
     def init_play(self):
-        with open(f"{self.output_path}/projects/{self.project}.json", "wt") as fout:
+        with open(
+            f"{self.outpath}/projects/{self.project}.json", "wt", encoding="utf-8"
+        ) as fout:
             fout.write(json.dumps(self.items))
-        with open(f"{self.output_path}/musics/{self.project}.json", "wt") as fout:
+        with open(
+            f"{self.outpath}/musics/{self.project}.json", "wt", encoding="utf-8"
+        ) as fout:
             fout.write(json.dumps(self.music))
-        with open(f"{self.output_path}/user/tones.json", "wt") as fout:
+        with open(f"{self.outpath}/user/tones.json", "wt", encoding="utf-8") as fout:
             fout.write(json.dumps(self.tones))
         self.message = "Saved."
         for ch, sound in enumerate(self.music):
