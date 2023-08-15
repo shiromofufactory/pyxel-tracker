@@ -21,6 +21,7 @@ with [ CTRL | CMD ] key
   N         : Initialie the project
   L         : Load Project File
   Z         : Undo
+  Y         : Redo
   C         : Copy
   V         : Paste
   O         : Transpose up a semitone

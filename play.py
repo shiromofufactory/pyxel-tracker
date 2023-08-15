@@ -1,7 +1,7 @@
 import pyxel
 import json
 
-MUSIC_FILE = "sample"
+MUSIC_FILE = "wiz-battle1"
 
 
 class App:

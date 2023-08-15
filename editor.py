@@ -32,6 +32,7 @@ class App:
         finally:
             self.patterns = json.loads(fin.read())
         self.pool = []
+        self.redo_items = []
         self.music = []
         self.is_file_load = False
         self.is_file_save = False
@@ -124,13 +125,21 @@ class App:
             self.set_files()
             self.is_file_load = True
         if px.btnp(px.KEY_Z):
-            idx = len(self.pool) - 1
-            if idx >= 0:
-                self.items = self.pool.pop(idx)
+            if self.pool:
+                self.redo_items.append(self.items)
+                self.items = self.pool.pop()
                 self.message = "Undoed."
                 self.add_crow(0)
             else:
                 self.message = "Cannot undo."
+        if px.btnp(px.KEY_Y):
+            if self.redo_items:
+                self.pool.append(self.items)
+                self.items = self.redo_items.pop()
+                self.message = "Redoed."
+                self.add_crow(0)
+            else:
+                self.message = "Cannot redo."
         if px.btnp(px.KEY_C):
             (x1, x2, y1, y2) = self.get_x12y12()
             buffer = []
@@ -175,6 +184,7 @@ class App:
 
     def push_pool(self):
         self.pool.append(copy.deepcopy(self.items))
+        self.redo_items = []
         if len(self.pool) > 30:
             self.pool.pop(0)
 
@@ -227,7 +237,11 @@ class App:
             if px.btnp(px.KEY_ESCAPE):
                 self.is_file_load = False
             if px.btnp(px.KEY_RETURN):
-                self.project = self.files[self.file_cursol].replace(".json", "")
+                self.project = (
+                    self.files[self.file_cursol]
+                    .replace(".json", "")
+                    .replace("projects\\", "")
+                )
                 self.crow1 = 0
                 self.pos = 0
                 with open(
