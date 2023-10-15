@@ -20,6 +20,7 @@ with [ CTRL | CMD ] key
   Q         : Exit application
   N         : Initialie the project
   L         : Load Project File
+  E         : Export MIDI File
   Z         : Undo
   Y         : Redo
   C         : Copy

@@ -5,3 +5,4 @@ old
 user/*.json
 musics/*.json
 projects/*.json
+midi/*.mid

@@ -124,6 +124,12 @@ class App:
         if px.btnp(px.KEY_L):
             self.set_files()
             self.is_file_load = True
+        if px.btnp(px.KEY_E) and self.project:
+            try:
+                sounds.make_midi(self.items, f"{self.outpath}/midi/{self.project}.mid")
+                self.message = "Exported midi file."
+            except:
+                self.message = "Failed export midi file."
         if px.btnp(px.KEY_Z):
             if self.pool:
                 self.redo_items.append(self.items)
