@@ -464,7 +464,7 @@ class App:
                 self.update_tone(list_wave[idx_wave])
             else:
                 self.update_tone(tone[tone_key] + rlkey)
-        if self.tone_cursol > 1:
+        if self.tone_cursol > 0:
             (_, value) = util.numkey()
             if not value is None:
                 self.update_tone(self.numstock * 10 + value)
