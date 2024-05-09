@@ -211,17 +211,19 @@ def make_midi(src, outPath):
                     channel=9,
                 )
             )
+            """
             tracks[ch].append(
                 Message(
                     "note_off",
                     note=midi_note,
                     velocity=64,
-                    time=40,
+                    time=1,
                     channel=9,
                 )
             )
+            """
             has_msg[ch] = True
-            prev_time[ch] += 40
+            prev_time[ch] = cur_time
             prev_notes[ch] = -1
         elif new_note == -1:
             prev_notes[ch] = -1

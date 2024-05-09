@@ -333,7 +333,7 @@ class App:
             fout.write(json.dumps(self.tones))
         self.message = "Saved."
         for ch, sound in enumerate(self.music):
-            px.sound(ch).set(*sound)
+            px.sounds[ch].set(*sound)
         self.start_play()
         self.is_playing = True
         self.is_range_mode = False
@@ -422,7 +422,7 @@ class App:
         }
         result = {}
         sounds.putNotes(960 * 48, state, self.tones, result)
-        px.sound(0).set(
+        px.sounds[0].set(
             result["note"],
             result["tone"],
             result["volume"],
