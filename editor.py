@@ -549,6 +549,23 @@ class App:
         if px.btnp(px.KEY_SPACE, 10, 2):
             self.set_note(self.cx1 - 1, None)
         if px.btnp(px.KEY_BACKSPACE, 10, 2):
+            if self.is_range_mode:
+                self.push_pool()
+                (x1, x2, y1, y2) = self.get_x12y12()
+                idx = 0
+                print(x1, x2, y1, y2)
+                while True:
+                    if y1 + idx > y2 or y1 + idx >= len(self.items):
+                        break
+                    col1 = get_col(x1)
+                    col2 = get_col(x2 + 1)
+                    while col1 < col2:
+                        self.set_item(y1 + idx, col1, None)
+                        col1 += 1
+                    idx += 1
+                self.auto_delete_rows()
+                # self.add_crow(-1, True)
+                return
             if self.cx1 == 0 and self.crow1 == 0:
                 return
             col1 = get_col(self.cx1)
@@ -564,6 +581,7 @@ class App:
                 col1 += 1
             self.auto_delete_rows()
             self.add_crow(-1, True)
+            self.is_range_mode = False
         if px.btnp(px.KEY_SHIFT):
             self.is_range_mode = not self.is_range_mode
         ud_key = util.udkey()
@@ -619,7 +637,8 @@ class App:
                 if not data is None:
                     saved_item[i] = item[i]
             loc_size = saved_item[1]
-            tick += saved_item[2]
+            if not saved_item[2] is None:
+                tick += saved_item[2]
             if tick == loc_size:
                 tick = 0
             pos = item_idx - self.pos
@@ -923,6 +942,8 @@ class App:
         return self.items[row] if row < len(self.items) else copy.deepcopy(item_empty)
 
     def set_item(self, row, col, data):
+        if row == 0 and col <= 2 and data is None:
+            return
         self.message = None
         self.auto_add_rows(row)
         self.items[row][col] = data
