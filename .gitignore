@@ -2,6 +2,7 @@ __pycache__
 system/__pycache__
 dev
 old
+audio
 user/*.json
 musics/*.json
 projects/*.json
