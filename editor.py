@@ -310,7 +310,7 @@ class App:
                 self.add_crow(self.playing_row - self.crow1)
                 self.is_playing = False
             else:
-                while self.items_tick[self.playing_row + 1] / 48 <= pos[1]:
+                while self.items_tick[self.playing_row + 1] / 48 <= pos[1] * 120:
                     self.playing_row += 1
         elif pressed:
             self.music = sounds.compile(self.items, self.tones, self.patterns)
@@ -346,7 +346,7 @@ class App:
         tick = int(self.items_tick[row] / 48)
         self.playing_row = row
         for ch in range(4):
-            px.play(ch, [ch], tick)
+            px.play(ch, [ch], tick=tick)
 
     # ===============================================
     # ピアノ
