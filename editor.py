@@ -134,6 +134,8 @@ class App:
             if self.pool:
                 self.redo_items.append(self.items)
                 self.items = self.pool.pop()
+                self.set_locs()
+                self.fix_cursor_row()
                 self.message = "Undoed."
                 self.add_crow(0)
             else:
@@ -142,6 +144,8 @@ class App:
             if self.redo_items:
                 self.pool.append(self.items)
                 self.items = self.redo_items.pop()
+                self.set_locs()
+                self.fix_cursor_row()
                 self.message = "Redoed."
                 self.add_crow(0)
             else:
@@ -203,18 +207,22 @@ class App:
 
     def transpose(self, dist):
         (x1, x2, y1, y2) = self.get_x12y12()
+        max_row = min(y2, len(self.items) - 1)
+        has_changed = False
         row = y1
-        while True:
+        while row <= max_row:
             for idx in range(x2 - x1 + 1):
                 if x1 + idx > 0:
                     col = get_col(x1 + idx) + 3
                     value = self.items[row][col]
                     if type(value) is int and value >= 0:
                         new_value = util.range(value, dist, 59, 0)
-                        self.set_item(row, col, new_value)
+                        if new_value != value:
+                            self.items[row][col] = new_value
+                            has_changed = True
             row += 1
-            if row > y2 or row >= len(self.items):
-                break
+        if has_changed:
+            self.set_locs()
 
     # ===============================================
     # ヘルプ
@@ -559,18 +567,17 @@ class App:
             if self.is_range_mode:
                 self.push_pool()
                 (x1, x2, y1, y2) = self.get_x12y12()
-                idx = 0
-                print(x1, x2, y1, y2)
-                while True:
-                    if y1 + idx > y2 or y1 + idx >= len(self.items):
-                        break
-                    col1 = get_col(x1)
-                    col2 = get_col(x2 + 1)
-                    while col1 < col2:
-                        self.set_item(y1 + idx, col1, None)
-                        col1 += 1
-                    idx += 1
+                max_row = min(y2, len(self.items) - 1)
+                col1 = get_col(x1)
+                col2 = get_col(x2 + 1)
+                for row in range(y1, max_row + 1):
+                    for col in range(col1, col2):
+                        if row == 0 and col <= 2:
+                            continue
+                        self.items[row][col] = None
+                self.set_locs()
                 self.auto_delete_rows()
+                self.set_locs()
                 # self.add_crow(-1, True)
                 return
             if self.cx1 == 0 and self.crow1 == 0:
@@ -613,8 +620,9 @@ class App:
         else:
             self.cx2 = self.cx1
             self.crow2 = self.crow1
-        if self.cx1 > 0:
-            self.piano_tone = self.piano_tones[self.crow1][self.cx1 - 1]
+        if self.cx1 > 0 and self.piano_tones:
+            tone_row = min(self.crow1, len(self.piano_tones) - 1)
+            self.piano_tone = self.piano_tones[tone_row][self.cx1 - 1]
 
     def draw_notes(self):
         # 再生インジケータ
@@ -985,6 +993,14 @@ class App:
                 break
             else:
                 del self.items[-locs:]
+        self.fix_cursor_row()
+
+    def fix_cursor_row(self):
+        max_row = max(len(self.items) - 1, 0)
+        if self.crow1 > max_row:
+            self.crow1 = max_row
+        if self.pos > self.crow1:
+            self.pos = self.crow1
 
     def draw_item(self, y, i, data, is_real):
         if not data is None:
