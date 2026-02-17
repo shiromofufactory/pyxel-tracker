@@ -150,9 +150,9 @@ class App:
             (x1, x2, y1, y2) = self.get_x12y12()
             buffer = []
             idx = 0
+            col1 = get_col(x1)
+            col2 = get_col(x2 + 1)
             while True:
-                col1 = get_col(x1)
-                col2 = get_col(x2 + 1)
                 buffer.append(self.items[y1 + idx][col1:col2])
                 idx += 1
                 if y1 + idx > y2 or y1 + idx >= len(self.items):
@@ -164,7 +164,6 @@ class App:
             if self.buffer is None:
                 self.message = "No copied data."
                 return
-            self.push_pool()
             is_col_all = len(self.buffer[0]) > 4
             if is_col_all:
                 base_col = 0
@@ -173,9 +172,17 @@ class App:
                 return
             else:
                 base_col = get_col(self.cx1)
+            self.push_pool()
+            last_row = self.crow1 + len(self.buffer) - 1
+            self.auto_add_rows(last_row, recalc=False)
             for y, buffer in enumerate(self.buffer):
+                target_row = self.crow1 + y
                 for col, value in enumerate(buffer):
-                    self.set_item(self.crow1 + y, base_col + col, value)
+                    target_col = base_col + col
+                    if target_row == 0 and target_col <= 2 and value is None:
+                        continue
+                    self.items[target_row][target_col] = value
+            self.set_locs()
             self.add_crow(len(self.buffer))
             self.message = "Pasted."
         if px.btnp(px.KEY_O, 10, 2):
@@ -899,7 +906,7 @@ class App:
             item = self.get_item(idx)
             items_tick.append(tick_total)
             locs.append(loc)
-            current_tones = copy.deepcopy(current_tones)
+            current_tones = current_tones.copy()
             if not item[0] is None:
                 speed = item[0]
             if not item[1] is None:
@@ -941,16 +948,20 @@ class App:
     def get_item(self, row):
         return self.items[row] if row < len(self.items) else copy.deepcopy(item_empty)
 
-    def set_item(self, row, col, data):
+    def set_item(self, row, col, data, recalc=True):
         if row == 0 and col <= 2 and data is None:
             return
         self.message = None
-        self.auto_add_rows(row)
+        self.auto_add_rows(row, recalc)
         self.items[row][col] = data
-        self.set_locs()
+        if recalc:
+            self.set_locs()
 
-    def auto_add_rows(self, row):
-        dist_row = self.get_next_loc(row)
+    def auto_add_rows(self, row, recalc=True):
+        if recalc:
+            dist_row = self.get_next_loc(row)
+        else:
+            dist_row = row
         while dist_row > len(self.items) - 1:
             self.items.append(copy.deepcopy(item_empty))
 
