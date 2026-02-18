@@ -1,6 +1,7 @@
 Key Command List
 
   Enter     : Play/stop music (saves the project on playback)
+  \\ / ¥    : Toggle real-time recording (with 1 bar count-in)
   Escape    : Go back to previous screen
   BackSpace : Delete note
   Space     : Move the cursor down one row

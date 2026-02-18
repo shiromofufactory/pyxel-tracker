@@ -3,6 +3,8 @@ import json
 import os
 import copy
 import glob
+import time
+import bisect
 
 from system import util
 from system import sounds
@@ -38,12 +40,24 @@ class App:
         self.is_file_load = False
         self.is_file_save = False
         self.is_playing = False
+        self.is_recording = False
+        self.is_counting_in = False
         self.is_help_mode = False
         self.files = []
         self.file_cursol = 0
         self.file_pos = 0
         self.playing_row = 0
         self.playing_start = None
+        self.record_channel = 0
+        self.record_start_row = 0
+        self.record_start_time = 0.0
+        self.record_countin_start_time = 0.0
+        self.record_countin_units = 0
+        self.record_countin_clicks = []
+        self.record_countin_click_idx = 0
+        self.record_active_note = None
+        self.record_last_row = None
+        self.record_note_col = 6
         self.is_tone_edit = False
         self.piano_octave = 2
         self.piano_tone = 0
@@ -85,6 +99,7 @@ class App:
         if not self.params_cx is None:
             return self.edit_params()
         self.manage_player()
+        self.manage_recorder()
         self.play_piano()
         self.manage_system()
         if self.is_tone_edit:
@@ -121,7 +136,7 @@ class App:
             self.playing_start = (
                 None if self.playing_start == self.crow1 else self.crow1
             )
-        if self.is_playing:
+        if self.is_playing or self.is_recording or self.is_counting_in:
             return
         if px.btnp(px.KEY_N):
             self.set_confirm("Are you sure you want to initialize this project?", "new")
@@ -318,6 +333,8 @@ class App:
     # ===============================================
 
     def manage_player(self):
+        if self.is_recording or self.is_counting_in:
+            return
         pressed = px.btnp(px.KEY_RETURN) and not self.is_cmd
         if self.is_playing:
             pos = px.play_pos(0) or px.play_pos(1) or px.play_pos(2) or px.play_pos(3)
@@ -368,11 +385,258 @@ class App:
             px.play(ch, [ch], tick=tick)
 
     # ===============================================
+    # リアルタイム録音
+    # ===============================================
+
+    def is_record_pressed(self):
+        record_keys = [px.KEY_BACKSLASH]
+        key_yen = getattr(px, "KEY_YEN", None)
+        if not key_yen is None:
+            record_keys.append(key_yen)
+        for key in record_keys:
+            if px.btnp(key) and not self.is_cmd:
+                return True
+        return False
+
+    def manage_recorder(self):
+        if self.is_record_pressed():
+            if self.is_recording or self.is_counting_in:
+                self.stop_recording()
+            elif self.is_playing:
+                self.message = "Stop playback before recording."
+            else:
+                self.start_recording_countin()
+        if self.is_counting_in:
+            self.update_countin()
+        elif self.is_recording:
+            self.update_recording()
+
+    def start_recording_countin(self):
+        self.push_pool()
+        self.is_range_mode = False
+        self.record_active_note = None
+        self.record_start_row = min(self.crow1, len(self.items) - 1)
+        self.playing_row = self.record_start_row
+        self.record_channel = max(self.cx1 - 1, 0)
+        self.record_note_col = self.record_channel * 4 + 6
+        self.record_countin_clicks = self.build_countin_clicks(self.record_start_row)
+        self.record_countin_click_idx = 0
+        self.record_countin_units = (
+            self.record_countin_clicks[-1][0]
+            if self.record_countin_clicks
+            else self.row_speeds[self.record_start_row] * self.row_loc_sizes[self.record_start_row]
+        )
+        self.record_countin_start_time = time.perf_counter()
+        self.is_counting_in = True
+        self.is_recording = False
+        self.record_last_row = self.record_start_row - 1
+        self.message = "Count in..."
+
+    def build_countin_clicks(self, row):
+        speed = self.row_speeds[row]
+        loc_size = self.row_loc_sizes[row]
+        beat_cnt = dict_beat[loc_size]
+        beat_tick = loc_size // beat_cnt
+        beat_units = speed * beat_tick
+        clicks = []
+        for beat in range(beat_cnt):
+            clicks.append((beat * beat_units, beat == 0))
+        clicks.append((speed * loc_size, False))
+        return clicks
+
+    def update_countin(self):
+        elapsed_units = (time.perf_counter() - self.record_countin_start_time) * 5760
+        while self.record_countin_click_idx < len(self.record_countin_clicks):
+            click_units, accent = self.record_countin_clicks[self.record_countin_click_idx]
+            if elapsed_units < click_units:
+                break
+            if self.record_countin_click_idx < len(self.record_countin_clicks) - 1:
+                self.play_metronome(accent)
+            self.record_countin_click_idx += 1
+        if elapsed_units >= self.record_countin_units:
+            self.is_counting_in = False
+            self.is_recording = True
+            self.record_start_time = time.perf_counter()
+            self.record_last_row = self.record_start_row - 1
+            self.message = "Recording..."
+
+    def update_recording(self):
+        abs_units = self.get_record_abs_units()
+        row = self.get_row_from_units(abs_units)
+        self.playing_row = row
+        self.process_record_metronome(row)
+        for event_type, midi_note in self.midi.poll():
+            if event_type == "on":
+                pyxel_note = midi_note - 36 + (self.piano_octave - 2) * 12
+                if pyxel_note < 0 or pyxel_note > 59:
+                    if midi_note not in self.midi_warned_reject_notes:
+                        print(
+                            "[WARN] MIDI note rejected (out of range): "
+                            f"note={midi_note}, mapped={pyxel_note}"
+                        )
+                        self.midi_warned_reject_notes.add(midi_note)
+                    continue
+                note_row = self.get_snap_row_from_units(abs_units)
+                self.record_set_note(note_row, pyxel_note)
+                self.record_active_note = {
+                    "midi": midi_note,
+                    "start_row": note_row,
+                }
+                self.play_record_note(pyxel_note)
+            elif (
+                self.record_active_note
+                and self.record_active_note["midi"] == midi_note
+            ):
+                rest_row = self.get_snap_row_from_units(abs_units)
+                if rest_row <= self.record_active_note["start_row"]:
+                    rest_row = self.record_active_note["start_row"] + 1
+                self.record_set_note(rest_row, -1)
+                self.record_active_note = None
+                self.stop_record_note()
+
+    def get_record_abs_units(self):
+        elapsed_units = (time.perf_counter() - self.record_start_time) * 5760
+        abs_units = self.items_tick[self.record_start_row] + elapsed_units
+        self.extend_items_for_units(abs_units)
+        return abs_units
+
+    def extend_items_for_units(self, abs_units):
+        while abs_units >= self.items_tick[-1]:
+            self.auto_add_rows(len(self.items), recalc=False)
+            self.set_locs()
+
+    def get_row_from_units(self, abs_units):
+        row = bisect.bisect_right(self.items_tick, abs_units) - 1
+        row = max(min(row, len(self.items) - 1), 0)
+        return row
+
+    def get_snap_row_from_units(self, abs_units):
+        row = self.get_row_from_units(abs_units)
+        if row + 1 >= len(self.items_tick):
+            return row
+        prev_units = self.items_tick[row]
+        next_units = self.items_tick[row + 1]
+        if abs_units - prev_units >= next_units - abs_units:
+            snap_row = row + 1
+        else:
+            snap_row = row
+        if snap_row >= len(self.items):
+            self.auto_add_rows(snap_row, recalc=False)
+            self.set_locs()
+        return snap_row
+
+    def record_set_note(self, row, note):
+        self.auto_add_rows(row, recalc=False)
+        self.items[row][self.record_note_col] = note
+        if row >= len(self.items) - 1:
+            self.set_locs()
+
+    def is_beat_row(self, row):
+        tick_in_loc = self.row_ticks_in_loc[row]
+        loc_size = self.row_loc_sizes[row]
+        beat_tick = loc_size // dict_beat[loc_size]
+        return tick_in_loc % beat_tick == 0
+
+    def process_record_metronome(self, row):
+        if self.record_last_row is None:
+            self.record_last_row = row
+            return
+        if row <= self.record_last_row:
+            return
+        start = self.record_last_row + 1
+        end = row + 1
+        for idx in range(start, end):
+            if idx >= len(self.items):
+                break
+            if self.is_beat_row(idx):
+                self.play_metronome(self.row_ticks_in_loc[idx] == 0)
+        self.record_last_row = row
+
+    def play_metronome(self, accent):
+        key = ":1" if accent else ":3"
+        pattern = None
+        for item in self.patterns:
+            if item["key"] == key:
+                pattern = item
+                break
+        if pattern is None:
+            return
+        state = {
+            "note_cnt": 1,
+            "tone": 0,
+            "volume": 7,
+            "quantize": 1.0,
+            "duration": 0,
+            "note": None,
+            "is_rest": False,
+            "pattern": pattern,
+            "tick": 0,
+        }
+        result = {}
+        sounds.putNotes(48, state, self.tones, result)
+        px.sounds[1].set(
+            result["note"],
+            result["tone"],
+            result["volume"],
+            result["effect"],
+            1,
+        )
+        px.play(1, [1])
+
+    def play_record_note(self, note):
+        state = {
+            "note_cnt": 1,
+            "tone": self.piano_tone,
+            "volume": 7,
+            "quantize": 1.0,
+            "duration": 0,
+            "note": note,
+            "is_rest": False,
+            "pattern": None,
+            "tick": 0,
+        }
+        result = {}
+        sounds.putNotes(48, state, self.tones, result)
+        px.sounds[0].set(
+            result["note"],
+            result["tone"],
+            result["volume"],
+            result["effect"],
+            1,
+        )
+        px.play(0, [0])
+
+    def stop_record_note(self):
+        px.play(0, [0], tick=480)
+
+    def stop_recording(self):
+        if self.is_recording and self.record_active_note:
+            abs_units = self.get_record_abs_units()
+            rest_row = self.get_snap_row_from_units(abs_units)
+            if rest_row <= self.record_active_note["start_row"]:
+                rest_row = self.record_active_note["start_row"] + 1
+            self.record_set_note(rest_row, -1)
+        self.is_counting_in = False
+        self.is_recording = False
+        self.record_active_note = None
+        self.stop_record_note()
+        px.play(1, [1], tick=480)
+        self.add_crow(self.playing_row - self.crow1)
+        self.set_locs()
+        self.message = "Recording stopped."
+
+    # ===============================================
     # ピアノ
     # ===============================================
 
     def play_piano(self):
-        if self.is_cmd or self.is_range_mode or self.is_playing:
+        if (
+            self.is_cmd
+            or self.is_range_mode
+            or self.is_playing
+            or self.is_recording
+            or self.is_counting_in
+        ):
             return
         channel = self.cx1 - 1
         for key, value in dict_playkey.items():
@@ -656,7 +920,7 @@ class App:
 
     def draw_notes(self):
         # 再生インジケータ
-        if self.is_playing:
+        if self.is_playing or self.is_recording or self.is_counting_in:
             play_row = self.playing_row - self.pos
             if play_row > 12:
                 self.pos += play_row - 12
@@ -938,12 +1202,17 @@ class App:
         idx = 0
         locs = []
         items_tick = []
+        row_speeds = []
+        row_loc_sizes = []
+        row_tick_sizes = []
+        row_ticks_in_loc = []
         piano_tones = []
         current_tones = [0, 0, 0, 0]
         while True:
             item = self.get_item(idx)
             items_tick.append(tick_total)
             locs.append(loc)
+            row_ticks_in_loc.append(tick)
             current_tones = current_tones.copy()
             if not item[0] is None:
                 speed = item[0]
@@ -951,6 +1220,9 @@ class App:
                 loc_size = item[1]
             if not item[2] is None:
                 tick_size = item[2]
+            row_speeds.append(speed)
+            row_loc_sizes.append(loc_size)
+            row_tick_sizes.append(tick_size)
             for ch in range(4):
                 tone = item[3 + ch * 4]
                 if not tone is None:
@@ -969,6 +1241,10 @@ class App:
         self.piano_tones = piano_tones
         self.items_tick = items_tick
         self.locs = locs
+        self.row_speeds = row_speeds
+        self.row_loc_sizes = row_loc_sizes
+        self.row_tick_sizes = row_tick_sizes
+        self.row_ticks_in_loc = row_ticks_in_loc
 
     def init_items(self):
         items = []
