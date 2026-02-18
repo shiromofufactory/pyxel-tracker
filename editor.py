@@ -476,6 +476,15 @@ class App:
                         )
                         self.midi_warned_reject_notes.add(midi_note)
                     continue
+                if self.record_active_note:
+                    prev_rest_row = self.get_forward_snap_row_from_units(abs_units)
+                    if prev_rest_row <= self.record_active_note["start_row"]:
+                        prev_rest_row = self.record_active_note["start_row"] + 1
+                    self.fill_note_space(
+                        self.record_active_note["start_row"] + 1,
+                        prev_rest_row,
+                    )
+                    self.record_set_note(prev_rest_row, -1)
                 note_row = self.get_snap_row_from_units(abs_units)
                 self.record_set_note(note_row, pyxel_note)
                 self.record_active_note = {
@@ -490,6 +499,7 @@ class App:
                 rest_row = self.get_forward_snap_row_from_units(abs_units)
                 if rest_row <= self.record_active_note["start_row"]:
                     rest_row = self.record_active_note["start_row"] + 1
+                self.fill_note_space(self.record_active_note["start_row"] + 1, rest_row)
                 self.record_set_note(rest_row, -1)
                 self.record_active_note = None
                 self.stop_record_note()
@@ -544,6 +554,13 @@ class App:
         self.items[row][self.record_note_col] = note
         if row >= len(self.items) - 1:
             self.set_locs()
+
+    def fill_note_space(self, start_row, end_row):
+        if end_row <= start_row:
+            return
+        self.auto_add_rows(end_row - 1, recalc=False)
+        for row in range(start_row, end_row):
+            self.items[row][self.record_note_col] = None
 
     def is_beat_row(self, row):
         tick_in_loc = self.row_ticks_in_loc[row]
@@ -631,7 +648,7 @@ class App:
         px.play(0, [0])
 
     def stop_record_note(self):
-        px.play(0, [0], tick=480)
+        px.stop(0)
 
     def stop_recording(self):
         if self.is_recording and self.record_active_note:
@@ -639,6 +656,7 @@ class App:
             rest_row = self.get_forward_snap_row_from_units(abs_units)
             if rest_row <= self.record_active_note["start_row"]:
                 rest_row = self.record_active_note["start_row"] + 1
+            self.fill_note_space(self.record_active_note["start_row"] + 1, rest_row)
             self.record_set_note(rest_row, -1)
         self.is_counting_in = False
         self.is_recording = False
