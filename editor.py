@@ -482,12 +482,12 @@ class App:
                     "midi": midi_note,
                     "start_row": note_row,
                 }
-                self.play_record_note(pyxel_note)
+                self.play_record_note(pyxel_note, note_row)
             elif (
                 self.record_active_note
                 and self.record_active_note["midi"] == midi_note
             ):
-                rest_row = self.get_snap_row_from_units(abs_units)
+                rest_row = self.get_forward_snap_row_from_units(abs_units)
                 if rest_row <= self.record_active_note["start_row"]:
                     rest_row = self.record_active_note["start_row"] + 1
                 self.record_set_note(rest_row, -1)
@@ -517,6 +517,20 @@ class App:
         prev_units = self.items_tick[row]
         next_units = self.items_tick[row + 1]
         if abs_units - prev_units >= next_units - abs_units:
+            snap_row = row + 1
+        else:
+            snap_row = row
+        if snap_row >= len(self.items):
+            self.auto_add_rows(snap_row, recalc=False)
+            self.set_locs()
+        return snap_row
+
+    def get_forward_snap_row_from_units(self, abs_units):
+        row = self.get_row_from_units(abs_units)
+        if row + 1 >= len(self.items_tick):
+            return row
+        current_units = self.items_tick[row]
+        if abs_units - current_units > 1e-6:
             snap_row = row + 1
         else:
             snap_row = row
@@ -583,12 +597,22 @@ class App:
         )
         px.play(1, [1])
 
-    def play_record_note(self, note):
+    def get_channel_value_at_row(self, row, offset, default):
+        col = self.record_channel * 4 + offset
+        for idx in range(row, -1, -1):
+            value = self.items[idx][col]
+            if value is not None:
+                return value
+        return default
+
+    def play_record_note(self, note, row):
+        tone = self.get_channel_value_at_row(row, 3, self.piano_tones[row][self.record_channel])
+        volume = self.get_channel_value_at_row(row, 4, 7)
         state = {
             "note_cnt": 1,
-            "tone": self.piano_tone,
-            "volume": 7,
-            "quantize": 1.0,
+            "tone": tone,
+            "volume": volume,
+            "quantize": 0.95,
             "duration": 0,
             "note": note,
             "is_rest": False,
@@ -596,7 +620,7 @@ class App:
             "tick": 0,
         }
         result = {}
-        sounds.putNotes(48, state, self.tones, result)
+        sounds.putNotes(960 * 48, state, self.tones, result)
         px.sounds[0].set(
             result["note"],
             result["tone"],
@@ -612,7 +636,7 @@ class App:
     def stop_recording(self):
         if self.is_recording and self.record_active_note:
             abs_units = self.get_record_abs_units()
-            rest_row = self.get_snap_row_from_units(abs_units)
+            rest_row = self.get_forward_snap_row_from_units(abs_units)
             if rest_row <= self.record_active_note["start_row"]:
                 rest_row = self.record_active_note["start_row"] + 1
             self.record_set_note(rest_row, -1)
