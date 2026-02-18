@@ -49,7 +49,7 @@ class App:
         self.piano_tone = 0
         self.piano_key = None
         self.midi = midi_input.MidiInput()
-        self.midi_active_notes = set()
+        self.midi_note_counts = {}
         self.midi_warned_reject_notes = set()
         self.cx1 = 0
         self.crow1 = 0
@@ -386,13 +386,9 @@ class App:
             for pattern in self.patterns:
                 if pattern["key"] == ":" + str(value):
                     self.play_piano_note(key, None, pattern)
-        if (
-            not self.piano_key is None
-            and px.btnr(self.piano_key)
-            and len(self.midi_active_notes) == 0
-        ):
-            px.play(0, [0], tick=480)
+        if not self.piano_key is None and not px.btn(self.piano_key):
             self.piano_key = None
+            self.stop_piano_preview_if_idle()
         for event_type, midi_note in self.midi.poll():
             if event_type == "on":
                 pyxel_note = midi_note - 36 + (self.piano_octave - 2) * 12
@@ -405,19 +401,24 @@ class App:
                         self.midi_warned_reject_notes.add(midi_note)
                     continue
                 self.play_piano_note(None, pyxel_note, None, hold_key=False)
-                self.midi_active_notes.add(midi_note)
+                self.midi_note_counts[midi_note] = self.midi_note_counts.get(midi_note, 0) + 1
             else:
-                if midi_note in self.midi_active_notes:
-                    self.midi_active_notes.remove(midi_note)
-                if len(self.midi_active_notes) == 0 and (
-                    self.piano_key is None or not px.btn(self.piano_key)
-                ):
-                    px.play(0, [0], tick=480)
+                count = self.midi_note_counts.get(midi_note, 0)
+                if count <= 1:
+                    if midi_note in self.midi_note_counts:
+                        del self.midi_note_counts[midi_note]
+                else:
+                    self.midi_note_counts[midi_note] = count - 1
+                self.stop_piano_preview_if_idle()
         rest_pressed = px.btnp(px.KEY_R) or px.btnp(px.KEY_MINUS)
         if not self.is_tone_edit and channel >= 0 and rest_pressed:
             self.set_note(channel, -1)
         if px.btn(px.KEY_ALT):
             self.piano_octave = util.range(self.piano_octave, util.rlkey(), 4, 0)
+
+    def stop_piano_preview_if_idle(self):
+        if self.piano_key is None and len(self.midi_note_counts) == 0:
+            px.play(0, [0], tick=480)
 
     def draw_piano(self):
         project = (
