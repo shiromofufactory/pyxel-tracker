@@ -6,6 +6,7 @@ import glob
 
 from system import util
 from system import sounds
+from system import midi_input
 
 
 class App:
@@ -47,6 +48,9 @@ class App:
         self.piano_octave = 2
         self.piano_tone = 0
         self.piano_key = None
+        self.midi = midi_input.MidiInput()
+        self.midi_active_notes = set()
+        self.midi_warned_reject_notes = set()
         self.cx1 = 0
         self.crow1 = 0
         self.cx2 = 0
@@ -370,6 +374,7 @@ class App:
     def play_piano(self):
         if self.is_cmd or self.is_range_mode or self.is_playing:
             return
+        channel = self.cx1 - 1
         for key, value in dict_playkey.items():
             if px.btnp(key):
                 octave = self.piano_octave + value[1]
@@ -381,11 +386,34 @@ class App:
             for pattern in self.patterns:
                 if pattern["key"] == ":" + str(value):
                     self.play_piano_note(key, None, pattern)
-        if not self.piano_key is None and px.btnr(self.piano_key):
+        if (
+            not self.piano_key is None
+            and px.btnr(self.piano_key)
+            and len(self.midi_active_notes) == 0
+        ):
             px.play(0, [0], tick=480)
             self.piano_key = None
+        for event_type, midi_note in self.midi.poll():
+            if event_type == "on":
+                pyxel_note = midi_note - 36 + (self.piano_octave - 2) * 12
+                if pyxel_note < 0 or pyxel_note > 59:
+                    if not midi_note in self.midi_warned_reject_notes:
+                        print(
+                            "[WARN] MIDI note rejected (out of range): "
+                            f"note={midi_note}, mapped={pyxel_note}"
+                        )
+                        self.midi_warned_reject_notes.add(midi_note)
+                    continue
+                self.play_piano_note(None, pyxel_note, None, hold_key=False)
+                self.midi_active_notes.add(midi_note)
+            else:
+                if midi_note in self.midi_active_notes:
+                    self.midi_active_notes.remove(midi_note)
+                if len(self.midi_active_notes) == 0 and (
+                    self.piano_key is None or not px.btn(self.piano_key)
+                ):
+                    px.play(0, [0], tick=480)
         rest_pressed = px.btnp(px.KEY_R) or px.btnp(px.KEY_MINUS)
-        channel = self.cx1 - 1
         if not self.is_tone_edit and channel >= 0 and rest_pressed:
             self.set_note(channel, -1)
         if px.btn(px.KEY_ALT):
@@ -423,7 +451,7 @@ class App:
         px.text(234, 244, ">>", c_rs)
         px.text(8, 244, "<<", c_ls)
 
-    def play_piano_note(self, key, note, pattern):
+    def play_piano_note(self, key, note, pattern, hold_key=True):
         state = {
             "note_cnt": 1,
             "tone": self.piano_tone,
@@ -445,7 +473,8 @@ class App:
             1,
         )
         px.play(0, [0])
-        self.piano_key = key
+        if hold_key:
+            self.piano_key = key
         channel = self.cx1 - 1
         if not self.is_tone_edit and channel >= 0:
             value = note if not note is None else pattern["key"]

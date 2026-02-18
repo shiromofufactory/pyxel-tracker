@@ -26,6 +26,12 @@ midi ファイルエクスポート機能を使いたい方は、事前に mido 
 pip install mido
 ```
 
+MIDI キーボード入力機能を使う場合は、mido に加えて python-rtmidi もインストールしてください。
+
+```
+pip install python-rtmidi
+```
+
 ## フォルダ・ファイルの説明
 
 - projects フォルダ： 編集用の音楽データ（json ファイル）が出力されます。
