@@ -7,6 +7,7 @@ import glob
 from system import util
 from system import sounds
 from system import midi_input
+from system import wav_export
 
 
 class App:
@@ -134,6 +135,16 @@ class App:
                 self.message = "Exported midi file."
             except:
                 self.message = "Failed export midi file."
+        if px.btnp(px.KEY_R) and self.project:
+            try:
+                compiled = sounds.compile(self.items, self.tones, self.patterns)
+                wav_export.export_compiled_music_to_wav(
+                    compiled, f"{self.outpath}/audio/{self.project}.wav"
+                )
+                self.message = "Exported wav file."
+            except Exception as e:
+                print(f"[ERROR] WAV export failed: {e}")
+                self.message = "Failed export wav file."
         if px.btnp(px.KEY_Z):
             if self.pool:
                 self.redo_items.append(self.items)

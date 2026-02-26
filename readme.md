@@ -26,6 +26,21 @@ midi ファイルエクスポート機能を使いたい方は、事前に mido 
 pip install mido
 ```
 
+wav ファイルエクスポート機能を使いたい方は、PyAudio をインストールしてください。
+
+```
+pip install pyaudio
+```
+
+また、wav エクスポートは OS の再生出力を録音する方式のため、ループバック入力デバイス
+（BlackHole / Loopback / Soundflower / Stereo Mix など）が必要です。
+使用デバイスは以下の環境変数で指定できます。
+
+```
+PYXEL_TRACKER_WAV_INPUT_DEVICE_INDEX
+PYXEL_TRACKER_WAV_INPUT_DEVICE_NAME
+```
+
 MIDI キーボード入力機能を使う場合は、mido に加えて python-rtmidi もインストールしてください。
 
 ```

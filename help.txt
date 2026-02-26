@@ -21,6 +21,7 @@ with [ CTRL | CMD ] key
   N         : Initialie the project
   L         : Load Project File
   E         : Export MIDI File
+  R         : Export WAV File
   Z         : Undo
   Y         : Redo
   C         : Copy
